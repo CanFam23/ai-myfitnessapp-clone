@@ -1,13 +1,5 @@
-# Generated output files — re-create by running /build-app
-design.md
-frontend_output.md
-backend_output.md
-REVIEW.md
-RUNBOOK.md
-
-# Extracted app code — generated from output files
-frontend/
-backend/
+# Gradle
+.gradle/
 
 # Gradle
 .gradle/
