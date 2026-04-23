@@ -7,6 +7,7 @@ import com.app.models.Trips
 import com.app.models.toTrip
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.delete
@@ -17,9 +18,9 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
@@ -35,7 +36,7 @@ fun Application.tripRoutes() {
         route("/api/trips") {
             get {
                 try {
-                    val status = call.request.queryParameters["status"]?.trim()
+                    val status = call.request.queryParameters["status"]?.trim()?.takeIf { it.isNotEmpty() }
 
                     if (!status.isNullOrBlank() && status !in allowedStatuses) {
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("status must be planned, in-progress, or completed"))
@@ -46,7 +47,7 @@ fun Application.tripRoutes() {
                         val query = if (status.isNullOrBlank()) {
                             Trips.selectAll()
                         } else {
-                            Trips.select(Trips.status eq status)
+                            Trips.selectAll().where { Trips.status eq status }
                         }
 
                         query.orderBy(Trips.startDate to SortOrder.ASC).map { row -> row.toTrip() }
@@ -62,7 +63,7 @@ fun Application.tripRoutes() {
                 try {
                     val today = LocalDate.now()
                     val trips = transaction {
-                        Trips.select(Trips.status eq "planned")
+                        Trips.selectAll().where { Trips.status eq "planned" }
                             .map { row -> row.toTrip() }
                             .filter { trip ->
                                 LocalDate.parse(trip.startDate) >= today
@@ -84,7 +85,7 @@ fun Application.tripRoutes() {
                     }
 
                     val trip = transaction {
-                        Trips.select(Trips.id eq id).singleOrNull()?.toTrip()
+                        Trips.selectAll().where { Trips.id eq tripEntityId(id) }.singleOrNull()?.toTrip()
                     }
 
                     if (trip == null) {
@@ -108,7 +109,7 @@ fun Application.tripRoutes() {
                         return@post
                     }
 
-                    val status = body.status?.trim().takeUnless { it.isNullOrBlank() } ?: "planned"
+                    val status = body.status?.trim()?.takeUnless { it.isBlank() } ?: "planned"
                     val now = Instant.now().toString()
                     val normalizedStops = body.stops.map { it.trim() }.filter { it.isNotBlank() }
 
@@ -170,11 +171,11 @@ fun Application.tripRoutes() {
                     val normalizedStops = body.stops.map { it.trim() }.filter { it.isNotBlank() }
 
                     val updated = transaction {
-                        val existing = Trips.select(Trips.id eq id).singleOrNull()
+                        val existing = Trips.selectAll().where { Trips.id eq tripEntityId(id) }.singleOrNull()
                         if (existing == null) {
                             null
                         } else {
-                            Trips.update({ Trips.id eq id }) {
+                            Trips.update({ Trips.id eq tripEntityId(id) }) {
                                 it[title] = body.title.trim()
                                 it[origin] = body.origin.trim()
                                 it[destination] = body.destination.trim()
@@ -187,7 +188,7 @@ fun Application.tripRoutes() {
                                 it[updatedAt] = now
                             }
 
-                            Trips.select(Trips.id eq id).single().toTrip()
+                            Trips.selectAll().where { Trips.id eq tripEntityId(id) }.single().toTrip()
                         }
                     }
 
@@ -211,7 +212,7 @@ fun Application.tripRoutes() {
                     }
 
                     val deletedCount = transaction {
-                        Trips.deleteWhere { Trips.id eq id }
+                        Trips.deleteWhere { Trips.id eq tripEntityId(id) }
                     }
 
                     if (deletedCount == 0) {
@@ -227,6 +228,8 @@ fun Application.tripRoutes() {
         }
     }
 }
+
+private fun tripEntityId(id: Int): EntityID<Int> = EntityID(id, Trips)
 
 private fun validateTripBody(body: CreateTripRequest, requireStatus: Boolean): String? {
     if (body.title.isBlank()) return "title is required"
