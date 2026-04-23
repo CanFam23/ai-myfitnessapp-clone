@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build App"
+  short_description: "Run the full multi-agent app build pipeline"
+  default_prompt: "Use $build-app to generate a full-stack app from this idea: a habit tracker."

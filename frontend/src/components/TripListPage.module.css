@@ -1,0 +1,26 @@
+.container {
+  display: grid;
+  gap: 1rem;
+}
+
+.summaryCard {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.upcomingList {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.stateText {
+  color: #334155;
+  font-size: 1rem;
+}
+
+.errorText {
+  color: #b91c1c;
+  font-weight: 600;
+}

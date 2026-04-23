@@ -1,0 +1,31 @@
+.panel {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.title {
+  margin-top: 0;
+  color: #0f172a;
+}
+
+.route {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.meta {
+  color: #475569;
+}
+
+.notes {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}

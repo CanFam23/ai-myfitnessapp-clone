@@ -1,0 +1,44 @@
+.form {
+  display: grid;
+  gap: 0.8rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.row {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea,
+.field select {
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.submit {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.errorText {
+  color: #b91c1c;
+  margin: 0;
+}

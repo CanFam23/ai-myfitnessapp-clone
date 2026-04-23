@@ -1,0 +1,13 @@
+.container {
+  display: grid;
+  gap: 1rem;
+}
+
+.stateText {
+  color: #334155;
+}
+
+.errorText {
+  color: #b91c1c;
+  font-weight: 600;
+}

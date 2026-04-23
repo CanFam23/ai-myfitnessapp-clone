@@ -1,8 +1,8 @@
 package com.app
 
-import com.app.models.Foods
-import com.app.models.MealEntries
-import org.jetbrains.exposed.dao.id.EntityID
+import com.app.models.Trips
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insert
@@ -10,67 +10,70 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.time.Instant
-import java.time.LocalDate
 
 object DatabaseFactory {
     fun init() {
-        File("data").mkdirs()
-        Database.connect("jdbc:sqlite:data/app.db", driver = "org.sqlite.JDBC")
+        val dataDirectory = File("data")
+        if (!dataDirectory.exists()) {
+            dataDirectory.mkdirs()
+        }
+
+        val dbFile = File(dataDirectory, "app.db")
+        Database.connect(url = "jdbc:sqlite:${dbFile.path}", driver = "org.sqlite.JDBC")
+
         transaction {
-            SchemaUtils.createMissingTablesAndColumns(Foods, MealEntries)
+            SchemaUtils.createMissingTablesAndColumns(Trips)
+            seedTripsIfEmpty()
+        }
+    }
 
-            if (Foods.selectAll().count() == 0L) {
-                Foods.insert {
-                    it[name] = "Chicken Breast"
-                    it[caloriesPer100g] = 165.0
-                    it[proteinPer100g] = 31.0
-                    it[carbsPer100g] = 0.0
-                    it[fatPer100g] = 3.6
-                }
-                Foods.insert {
-                    it[name] = "Brown Rice"
-                    it[caloriesPer100g] = 112.0
-                    it[proteinPer100g] = 2.6
-                    it[carbsPer100g] = 23.5
-                    it[fatPer100g] = 0.9
-                }
-                Foods.insert {
-                    it[name] = "Banana"
-                    it[caloriesPer100g] = 89.0
-                    it[proteinPer100g] = 1.1
-                    it[carbsPer100g] = 23.0
-                    it[fatPer100g] = 0.3
-                }
-            }
+    private fun seedTripsIfEmpty() {
+        if (Trips.selectAll().count() > 0L) {
+            return
+        }
 
-            if (MealEntries.selectAll().count() == 0L) {
-                val today = LocalDate.now().toString()
-                val now = Instant.now().toString()
-                val foodIds = Foods.selectAll().limit(3).map { it[Foods.id].value }
-                if (foodIds.size >= 3) {
-                    MealEntries.insert {
-                        it[foodId] = EntityID(foodIds[0], Foods)
-                        it[mealType] = "breakfast"
-                        it[quantityGrams] = 150.0
-                        it[date] = today
-                        it[createdAt] = now
-                    }
-                    MealEntries.insert {
-                        it[foodId] = EntityID(foodIds[1], Foods)
-                        it[mealType] = "lunch"
-                        it[quantityGrams] = 200.0
-                        it[date] = today
-                        it[createdAt] = now
-                    }
-                    MealEntries.insert {
-                        it[foodId] = EntityID(foodIds[2], Foods)
-                        it[mealType] = "snack"
-                        it[quantityGrams] = 120.0
-                        it[date] = today
-                        it[createdAt] = now
-                    }
-                }
-            }
+        val now = Instant.now().toString()
+
+        Trips.insert {
+            it[title] = "Southwest Scenic Loop"
+            it[origin] = "Denver, CO"
+            it[destination] = "Moab, UT"
+            it[startDate] = "2026-06-10"
+            it[endDate] = "2026-06-16"
+            it[stopsJson] = Json.encodeToString(listOf("Grand Junction", "Arches National Park"))
+            it[budgetUsd] = 1200.0
+            it[status] = "planned"
+            it[notes] = "Book campsite near Moab."
+            it[createdAt] = now
+            it[updatedAt] = now
+        }
+
+        Trips.insert {
+            it[title] = "Pacific Coast Weekend"
+            it[origin] = "San Francisco, CA"
+            it[destination] = "Big Sur, CA"
+            it[startDate] = "2026-05-01"
+            it[endDate] = "2026-05-03"
+            it[stopsJson] = Json.encodeToString(listOf("Half Moon Bay", "Monterey"))
+            it[budgetUsd] = 650.0
+            it[status] = "in-progress"
+            it[notes] = "Reserve dinner in Carmel."
+            it[createdAt] = now
+            it[updatedAt] = now
+        }
+
+        Trips.insert {
+            it[title] = "Blue Ridge Fall Drive"
+            it[origin] = "Asheville, NC"
+            it[destination] = "Roanoke, VA"
+            it[startDate] = "2025-10-12"
+            it[endDate] = "2025-10-15"
+            it[stopsJson] = Json.encodeToString(listOf("Blowing Rock", "Mabry Mill"))
+            it[budgetUsd] = 900.0
+            it[status] = "completed"
+            it[notes] = "Great leaf colors near Milepost 176."
+            it[createdAt] = now
+            it[updatedAt] = now
         }
     }
 }

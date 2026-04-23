@@ -1,0 +1,13 @@
+.container {
+  display: grid;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  color: #0f172a;
+}
+
+.helper {
+  color: #475569;
+}

@@ -1,264 +1,229 @@
 ## API Spec
 
-### GET /api/foods
-- **Purpose:** Search the food database by name
-- **Query params:** `q` (string, required) — search term
-- **Request body:** none
-- **Success response:** `200 OK`
-  - `items`: array of food objects
-    - `id`: integer
-    - `name`: string
-    - `calories_per_100g`: number
-    - `protein_per_100g`: number
-    - `carbs_per_100g`: number
-    - `fat_per_100g`: number
-- **Errors:**
-  - `400` — `q` param missing or empty
+### 1) GET /api/trips
+- Purpose: List trips, optionally filtered by status.
+- Query params:
+  - `status` (string, optional; one of `planned`, `in-progress`, `completed`)
+- Request body: none
+- Success response:
+  - HTTP 200
+  - JSON array of trip objects:
+    - `id: number`
+    - `title: string`
+    - `origin: string`
+    - `destination: string`
+    - `startDate: string` (ISO date, `YYYY-MM-DD`)
+    - `endDate: string` (ISO date, `YYYY-MM-DD`)
+    - `stops: string[]`
+    - `budgetUsd: number`
+    - `status: string`
+    - `notes: string`
+    - `createdAt: string` (ISO timestamp)
+    - `updatedAt: string` (ISO timestamp)
+- Error responses:
+  - HTTP 400 when `status` is provided but not valid
+  - HTTP 500 on unexpected server error
 
----
+### 2) GET /api/trips/upcoming
+- Purpose: List planned trips with start dates today or later.
+- Request body: none
+- Success response:
+  - HTTP 200
+  - JSON array of trip objects with same shape as `GET /api/trips`
+- Error responses:
+  - HTTP 500 on unexpected server error
 
-### GET /api/foods/{id}
-- **Purpose:** Retrieve a single food item by ID
-- **Path param:** `id` (integer, required)
-- **Request body:** none
-- **Success response:** `200 OK`
-  - `id`: integer
-  - `name`: string
-  - `calories_per_100g`: number
-  - `protein_per_100g`: number
-  - `carbs_per_100g`: number
-  - `fat_per_100g`: number
-- **Errors:**
-  - `404` — food not found
+### 3) GET /api/trips/{id}
+- Purpose: Fetch details for one trip.
+- Path params:
+  - `id` (number, required)
+- Request body: none
+- Success response:
+  - HTTP 200
+  - JSON trip object with fields:
+    - `id: number`
+    - `title: string`
+    - `origin: string`
+    - `destination: string`
+    - `startDate: string`
+    - `endDate: string`
+    - `stops: string[]`
+    - `budgetUsd: number`
+    - `status: string`
+    - `notes: string`
+    - `createdAt: string`
+    - `updatedAt: string`
+- Error responses:
+  - HTTP 400 if `id` is not a valid integer
+  - HTTP 404 if trip is not found
+  - HTTP 500 on unexpected server error
 
----
+### 4) POST /api/trips
+- Purpose: Create a trip.
+- Request body (JSON):
+  - `title: string` (required)
+  - `origin: string` (required)
+  - `destination: string` (required)
+  - `startDate: string` (required, ISO date)
+  - `endDate: string` (required, ISO date)
+  - `stops: string[]` (optional, default `[]`)
+  - `budgetUsd: number` (required, `>= 0`)
+  - `status: string` (optional, default `planned`)
+  - `notes: string` (optional, default `""`)
+- Success response:
+  - HTTP 201
+  - JSON created trip object with all fields from `GET /api/trips/{id}`
+- Error responses:
+  - HTTP 400 when required fields are missing, date range is invalid, or budget is negative
+  - HTTP 500 on unexpected server error
 
-### GET /api/entries
-- **Purpose:** Retrieve all meal entries for a given date
-- **Query params:** `date` (string, required, format `YYYY-MM-DD`)
-- **Request body:** none
-- **Success response:** `200 OK`
-  - `date`: string
-  - `entries`: array of entry objects
-    - `id`: integer
-    - `meal_type`: string (`breakfast` | `lunch` | `dinner` | `snack`)
-    - `quantity_grams`: number
-    - `food_id`: integer
-    - `food_name`: string
-    - `calories`: number (derived: `calories_per_100g * quantity_grams / 100`)
-    - `protein`: number (derived)
-    - `carbs`: number (derived)
-    - `fat`: number (derived)
-    - `created_at`: string (ISO 8601)
-- **Errors:**
-  - `400` — `date` param missing or invalid format
+### 5) PUT /api/trips/{id}
+- Purpose: Update an existing trip.
+- Path params:
+  - `id` (number, required)
+- Request body (JSON):
+  - `title: string` (required)
+  - `origin: string` (required)
+  - `destination: string` (required)
+  - `startDate: string` (required, ISO date)
+  - `endDate: string` (required, ISO date)
+  - `stops: string[]` (optional, default `[]`)
+  - `budgetUsd: number` (required, `>= 0`)
+  - `status: string` (required; one of `planned`, `in-progress`, `completed`)
+  - `notes: string` (optional, default `""`)
+- Success response:
+  - HTTP 200
+  - JSON updated trip object with all fields from `GET /api/trips/{id}`
+- Error responses:
+  - HTTP 400 for invalid `id` or invalid request body
+  - HTTP 404 if trip is not found
+  - HTTP 500 on unexpected server error
 
----
-
-### POST /api/entries
-- **Purpose:** Log a new meal entry
-- **Request body (JSON, all required):**
-  - `food_id`: integer
-  - `meal_type`: string (`breakfast` | `lunch` | `dinner` | `snack`)
-  - `quantity_grams`: number (must be > 0)
-  - `date`: string (`YYYY-MM-DD`)
-- **Success response:** `201 Created`
-  - `id`: integer
-  - `food_id`: integer
-  - `meal_type`: string
-  - `quantity_grams`: number
-  - `date`: string
-  - `created_at`: string
-- **Errors:**
-  - `400` — missing required field, invalid `meal_type`, or `quantity_grams` ≤ 0
-  - `404` — `food_id` does not exist
-
----
-
-### PUT /api/entries/{id}
-- **Purpose:** Update the quantity of an existing meal entry
-- **Path param:** `id` (integer, required)
-- **Request body (JSON):**
-  - `quantity_grams`: number (required, must be > 0)
-- **Success response:** `200 OK`
-  - `id`: integer
-  - `food_id`: integer
-  - `meal_type`: string
-  - `quantity_grams`: number
-  - `date`: string
-  - `created_at`: string
-- **Errors:**
-  - `400` — `quantity_grams` missing or ≤ 0
-  - `404` — entry not found
-
----
-
-### DELETE /api/entries/{id}
-- **Purpose:** Remove a meal entry
-- **Path param:** `id` (integer, required)
-- **Request body:** none
-- **Success response:** `204 No Content`
-- **Errors:**
-  - `404` — entry not found
-
----
-
-### GET /api/summary
-- **Purpose:** Retrieve aggregated daily nutrition totals for a given date
-- **Query params:** `date` (string, required, format `YYYY-MM-DD`)
-- **Request body:** none
-- **Success response:** `200 OK`
-  - `date`: string
-  - `total_calories`: number
-  - `total_protein`: number
-  - `total_carbs`: number
-  - `total_fat`: number
-  - `by_meal`: object keyed by `meal_type`
-    - each key maps to: `calories`, `protein`, `carbs`, `fat` (all numbers)
-- **Errors:**
-  - `400` — `date` param missing or invalid format
-
----
+### 6) DELETE /api/trips/{id}
+- Purpose: Delete a trip.
+- Path params:
+  - `id` (number, required)
+- Request body: none
+- Success response:
+  - HTTP 204, empty body
+- Error responses:
+  - HTTP 400 for invalid `id`
+  - HTTP 404 if trip is not found
+  - HTTP 500 on unexpected server error
 
 ## DB Schema
 
-### Table: `foods`
+### Table: trips
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `title TEXT NOT NULL`
+- `origin TEXT NOT NULL`
+- `destination TEXT NOT NULL`
+- `start_date TEXT NOT NULL` (ISO date)
+- `end_date TEXT NOT NULL` (ISO date)
+- `stops_json TEXT NOT NULL DEFAULT '[]'` (JSON-encoded string array)
+- `budget_usd REAL NOT NULL DEFAULT 0`
+- `status TEXT NOT NULL DEFAULT 'planned'`
+- `notes TEXT NOT NULL DEFAULT ''`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
 
-| Column             | Type    | Constraints                  |
-|--------------------|---------|------------------------------|
-| id                 | INTEGER | PRIMARY KEY AUTOINCREMENT    |
-| name               | TEXT    | NOT NULL                     |
-| calories_per_100g  | REAL    | NOT NULL                     |
-| protein_per_100g   | REAL    | NOT NULL                     |
-| carbs_per_100g     | REAL    | NOT NULL                     |
-| fat_per_100g       | REAL    | NOT NULL                     |
+Relationships:
+- No foreign keys required for this minimal single-resource scope.
 
-- No foreign keys.
-- `name` should be indexed for text search performance.
-
----
-
-### Table: `meal_entries`
-
-| Column          | Type    | Constraints                                              |
-|-----------------|---------|----------------------------------------------------------|
-| id              | INTEGER | PRIMARY KEY AUTOINCREMENT                                |
-| food_id         | INTEGER | NOT NULL, FOREIGN KEY REFERENCES foods(id)               |
-| meal_type       | TEXT    | NOT NULL, CHECK(meal_type IN ('breakfast','lunch','dinner','snack')) |
-| quantity_grams  | REAL    | NOT NULL, CHECK(quantity_grams > 0)                      |
-| date            | TEXT    | NOT NULL (format: YYYY-MM-DD)                            |
-| created_at      | TEXT    | NOT NULL, DEFAULT (datetime('now'))                      |
-
-- Foreign key: `food_id` → `foods(id)`
-- Index on `date` to support efficient daily queries.
-- Derived fields (`calories`, `protein`, `carbs`, `fat`) are computed at query time by joining with `foods` and applying `value_per_100g * quantity_grams / 100`; they are not stored.
-
----
+Mapping notes:
+- API `startDate` maps to `trips.start_date`
+- API `endDate` maps to `trips.end_date`
+- API `stops` maps to `trips.stops_json` (array encoded/decoded as JSON)
+- API `budgetUsd` maps to `trips.budget_usd`
+- API `createdAt` maps to `trips.created_at`
+- API `updatedAt` maps to `trips.updated_at`
 
 ## Component Tree
 
-### `App`
-- **Route:** all routes (root wrapper)
-- **Props:** none
-- **Data:** none
-- **API calls:** none
-- **Children:** `NavBar`, `DailyLogPage`, `FoodSearchPage`
+### AppLayout
+- Route: shared layout for `/`, `/trips/new`, `/trips/:id`, `/trips/:id/edit`
+- Props: none
+- Displays: app title and navigation links
+- API: displays navigation to data-backed pages using `GET /api/trips`
+- Children: `TripListPage`, `TripFormPage`, `TripDetailsPage`, `TripEditPage`
 
----
+### TripListPage
+- Route: `/`
+- Props: none
+- Fetch/display:
+  - Fetches all trips via `GET /api/trips`
+  - Fetches upcoming trips via `GET /api/trips/upcoming`
+- API calls: `GET /api/trips`, `GET /api/trips/upcoming`, `DELETE /api/trips/{id}`
+- Children: `TripFilterBar`, `TripCardList`
 
-### `NavBar`
-- **Route:** all routes (persistent)
-- **Props:** none
-- **Data:** current selected date (from app state / URL param)
-- **API calls:** none
-- **Children:** `DatePicker`
+### TripFilterBar
+- Route: `/` (inside `TripListPage`)
+- Props:
+  - `statusFilter: string`
+  - `onStatusChange: function`
+  - `onRefresh: function`
+- Fetch/display: controls the `status` query used by `GET /api/trips`
+- API calls: influences `GET /api/trips`
+- Children: none
 
----
+### TripCardList
+- Route: `/` (inside `TripListPage`)
+- Props:
+  - `trips: Trip[]`
+  - `onDelete: function`
+- Fetch/display: renders list data returned from `GET /api/trips`
+- API calls: triggers `DELETE /api/trips/{id}` through callback
+- Children: `TripCard`
 
-### `DatePicker`
-- **Route:** all routes (inside NavBar)
-- **Props:** `selectedDate: string`, `onDateChange: (date: string) => void`
-- **Data:** controlled date value
-- **API calls:** none
-- **Children:** none
+### TripCard
+- Route: `/` (inside `TripCardList`)
+- Props:
+  - `trip: Trip`
+  - `onDelete: function`
+- Fetch/display: displays trip summary fields returned by `GET /api/trips`
+- API calls: triggers `DELETE /api/trips/{id}` for the card's trip
+- Children: none
 
----
+### TripDetailsPage
+- Route: `/trips/:id`
+- Props: none
+- Fetch/display: fetches and displays one trip via `GET /api/trips/{id}`
+- API calls: `GET /api/trips/{id}`
+- Children: `TripSummaryPanel`
 
-### `DailyLogPage`
-- **Route:** `/` (home / daily log view)
-- **Props:** none
-- **Data:** fetches entries and summary for the selected date
-- **API calls:** `GET /api/entries?date=`, `GET /api/summary?date=`
-- **Children:** `NutritionSummaryCard`, `MealSection` (rendered once per meal type: breakfast, lunch, dinner, snack)
+### TripSummaryPanel
+- Route: `/trips/:id` (inside `TripDetailsPage`)
+- Props:
+  - `trip: Trip`
+- Fetch/display: renders full trip details from `GET /api/trips/{id}`
+- API calls: displays response from `GET /api/trips/{id}`
+- Children: none
 
----
+### TripFormPage
+- Route: `/trips/new`
+- Props: none
+- Fetch/display: creates a new trip via `POST /api/trips`
+- API calls: `POST /api/trips`
+- Children: `TripForm`
 
-### `NutritionSummaryCard`
-- **Route:** `/`
-- **Props:** `summary: { total_calories: number, total_protein: number, total_carbs: number, total_fat: number }`
-- **Data:** displays aggregated daily totals passed from `DailyLogPage`
-- **API calls:** none (data passed via props)
-- **Children:** none
+### TripEditPage
+- Route: `/trips/:id/edit`
+- Props: none
+- Fetch/display:
+  - Prefills form using `GET /api/trips/{id}`
+  - Saves edits using `PUT /api/trips/{id}`
+- API calls: `GET /api/trips/{id}`, `PUT /api/trips/{id}`
+- Children: `TripForm`
 
----
-
-### `MealSection`
-- **Route:** `/`
-- **Props:** `mealType: string`, `entries: Entry[]`, `onEntryDeleted: (id: number) => void`, `onEntryUpdated: (id: number, grams: number) => void`
-- **Data:** displays all logged entries for one meal type
-- **API calls:** none (data passed via props)
-- **Children:** `MealEntryRow` (one per entry), `AddFoodButton`
-
----
-
-### `MealEntryRow`
-- **Route:** `/`
-- **Props:** `entry: Entry`, `onDelete: (id: number) => void`, `onUpdate: (id: number, grams: number) => void`
-- **Data:** displays food name, quantity, and derived macro values for one entry
-- **API calls:** `PUT /api/entries/{id}` (on quantity edit), `DELETE /api/entries/{id}` (on delete)
-- **Children:** none
-
----
-
-### `AddFoodButton`
-- **Route:** `/`
-- **Props:** `mealType: string`, `date: string`, `onEntryAdded: () => void`
-- **Data:** none; opens food search modal
-- **API calls:** none
-- **Children:** renders `FoodSearchModal` when active
-
----
-
-### `FoodSearchModal`
-- **Route:** `/` (modal overlay)
-- **Props:** `mealType: string`, `date: string`, `onClose: () => void`, `onEntryAdded: () => void`
-- **Data:** manages search query and results list
-- **API calls:** `GET /api/foods?q=`
-- **Children:** `FoodSearchBar`, `FoodSearchResults`
-
----
-
-### `FoodSearchBar`
-- **Route:** `/` (inside FoodSearchModal)
-- **Props:** `query: string`, `onQueryChange: (q: string) => void`
-- **Data:** controlled text input
-- **API calls:** none (triggers parent to call `GET /api/foods?q=`)
-- **Children:** none
-
----
-
-### `FoodSearchResults`
-- **Route:** `/` (inside FoodSearchModal)
-- **Props:** `results: Food[]`, `mealType: string`, `date: string`, `onEntryAdded: () => void`
-- **Data:** displays list of matching foods
-- **API calls:** none (data passed via props)
-- **Children:** `FoodResultItem` (one per result)
-
----
-
-### `FoodResultItem`
-- **Route:** `/` (inside FoodSearchResults)
-- **Props:** `food: Food`, `mealType: string`, `date: string`, `onEntryAdded: () => void`
-- **Data:** displays food name and macros per 100g; allows user to enter a quantity and confirm
-- **API calls:** `POST /api/entries`
-- **Children:** none
+### TripForm
+- Route: `/trips/new`, `/trips/:id/edit` (inside form pages)
+- Props:
+  - `mode: string` (`create` or `edit`)
+  - `initialValues: Trip | null`
+  - `onSubmitSuccess: function`
+- Fetch/display:
+  - Collects title, origin, destination, dates, stops, budget, status, notes
+- API calls:
+  - `POST /api/trips` when mode is `create`
+  - `PUT /api/trips/{id}` when mode is `edit`
+- Children: none

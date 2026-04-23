@@ -1,16 +1,21 @@
-import { Routes, Route } from 'react-router-dom'
-import NavBar from './components/NavBar'
-import DailyLogPage from './components/DailyLogPage'
+import { Routes, Route } from 'react-router-dom';
+import AppLayout from './components/AppLayout';
+import TripListPage from './components/TripListPage';
+import TripFormPage from './components/TripFormPage';
+import TripDetailsPage from './components/TripDetailsPage';
+import TripEditPage from './components/TripEditPage';
 
 function App() {
   return (
-    <>
-      <NavBar />
-      <Routes>
-        <Route path="/" element={<DailyLogPage />} />
-      </Routes>
-    </>
-  )
+    <Routes>
+      <Route path="/" element={<AppLayout />}>
+        <Route index element={<TripListPage />} />
+        <Route path="trips/new" element={<TripFormPage />} />
+        <Route path="trips/:id" element={<TripDetailsPage />} />
+        <Route path="trips/:id/edit" element={<TripEditPage />} />
+      </Route>
+    </Routes>
+  );
 }
 
-export default App
+export default App;

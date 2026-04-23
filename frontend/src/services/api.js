@@ -1,60 +1,68 @@
-const BASE = '/api'
+const JSON_HEADERS = {
+  'Content-Type': 'application/json',
+};
 
-async function handleResponse(res) {
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Request failed: ${res.status}`)
+async function handleResponse(response, fallbackMessage) {
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    const message = payload?.error || `${fallbackMessage} (HTTP ${response.status})`;
+    throw new Error(message);
   }
-  if (res.status === 204) return null
-  return res.json()
+
+  return payload;
 }
 
-// GET /api/foods?q= — search the food database by name
-export async function searchFoods(q) {
-  const res = await fetch(`${BASE}/foods?q=${encodeURIComponent(q)}`)
-  return handleResponse(res)
+// GET /api/trips - lists trips, optionally filtered by status
+export async function getTrips(status = '') {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  const response = await fetch(`/api/trips${query}`);
+  return handleResponse(response, 'Failed to load trips');
 }
 
-// GET /api/foods/{id} — retrieve a single food item by ID
-export async function getFoodById(id) {
-  const res = await fetch(`${BASE}/foods/${id}`)
-  return handleResponse(res)
+// GET /api/trips/upcoming - lists upcoming planned trips
+export async function getUpcomingTrips() {
+  const response = await fetch('/api/trips/upcoming');
+  return handleResponse(response, 'Failed to load upcoming trips');
 }
 
-// GET /api/entries?date= — retrieve all meal entries for a given date
-export async function getEntries(date) {
-  const res = await fetch(`${BASE}/entries?date=${encodeURIComponent(date)}`)
-  return handleResponse(res)
+// GET /api/trips/{id} - fetches one trip by id
+export async function getTripById(id) {
+  const response = await fetch(`/api/trips/${id}`);
+  return handleResponse(response, `Failed to load trip ${id}`);
 }
 
-// POST /api/entries — log a new meal entry, returns the created entry
-export async function createEntry(data) {
-  const res = await fetch(`${BASE}/entries`, {
+// POST /api/trips - creates a new trip
+export async function createTrip(body) {
+  const response = await fetch('/api/trips', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  })
-  return handleResponse(res)
+    headers: JSON_HEADERS,
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response, 'Failed to create trip');
 }
 
-// PUT /api/entries/{id} — update the quantity of an existing meal entry
-export async function updateEntry(id, data) {
-  const res = await fetch(`${BASE}/entries/${id}`, {
+// PUT /api/trips/{id} - updates an existing trip
+export async function updateTrip(id, body) {
+  const response = await fetch(`/api/trips/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  })
-  return handleResponse(res)
+    headers: JSON_HEADERS,
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response, `Failed to update trip ${id}`);
 }
 
-// DELETE /api/entries/{id} — remove a meal entry
-export async function deleteEntry(id) {
-  const res = await fetch(`${BASE}/entries/${id}`, { method: 'DELETE' })
-  return handleResponse(res)
-}
+// DELETE /api/trips/{id} - deletes a trip by id
+export async function deleteTrip(id) {
+  const response = await fetch(`/api/trips/${id}`, {
+    method: 'DELETE',
+  });
 
-// GET /api/summary?date= — retrieve aggregated daily nutrition totals
-export async function getSummary(date) {
-  const res = await fetch(`${BASE}/summary?date=${encodeURIComponent(date)}`)
-  return handleResponse(res)
+  if (!response.ok) {
+    const text = await response.text();
+    const payload = text ? JSON.parse(text) : null;
+    const message = payload?.error || `Failed to delete trip ${id} (HTTP ${response.status})`;
+    throw new Error(message);
+  }
 }

@@ -1,36 +1,42 @@
 package com.app
 
-import com.app.routes.entryRoutes
-import com.app.routes.foodRoutes
-import com.app.routes.summaryRoutes
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
+import com.app.routes.tripRoutes
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.cors.routing.CORS
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 fun main() {
     DatabaseFactory.init()
-    embeddedServer(Netty, port = 3001) {
-        install(ContentNegotiation) {
-            json(Json {
+    embeddedServer(Netty, port = 3001, host = "0.0.0.0") {
+        module()
+    }.start(wait = true)
+}
+
+fun Application.module() {
+    install(ContentNegotiation) {
+        json(
+            Json {
                 prettyPrint = true
                 ignoreUnknownKeys = true
-            })
-        }
-        install(CORS) {
-            allowHost("localhost:5173")
-            allowHeader(HttpHeaders.ContentType)
-            allowMethod(HttpMethod.Get)
-            allowMethod(HttpMethod.Post)
-            allowMethod(HttpMethod.Put)
-            allowMethod(HttpMethod.Delete)
-        }
-        foodRoutes()
-        entryRoutes()
-        summaryRoutes()
-    }.start(wait = true)
+            }
+        )
+    }
+
+    install(CORS) {
+        allowHost("localhost:5173")
+        allowHeader(HttpHeaders.ContentType)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+    }
+
+    tripRoutes()
 }
