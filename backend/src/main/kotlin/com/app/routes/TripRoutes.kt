@@ -143,7 +143,7 @@ fun Application.tripRoutes() {
                         )
                     }
 
-                    call.respond(HttpStatusCode.OK, created)
+                    call.respond(HttpStatusCode.Created, created)
                 } catch (exception: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Unexpected server error"))
                 }
